@@ -1,44 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <title>TechCloud - Tra cứu bảo hành</title>
-    <style>
-        body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }
-        input { padding: 10px; width: 70%; }
-        button { padding: 10px 20px; background: blue; color: white; border: none; cursor: pointer; }
-        .result { margin-top: 20px; padding: 15px; background: #f0f0f0; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechCloud | Trung tâm bảo hành thiết bị điện tử</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <h2>TRUNG TÂM BẢO HÀNH THIẾT BỊ TECHCLOUD</h2>
-    <form id="warrantyForm">
-        <input type="text" id="serial" placeholder="Nhập Serial / IMEI" required>
-        <button type="submit">TRA CỨU</button>
-    </form>
-    <div id="result" class="result" style="display:none;"></div>
 
-    <script>
-        document.getElementById('warrantyForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const serial = document.getElementById('serial').value;
-            const response = await fetch('/check_warranty', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: `serial=${serial}`
-            });
-            const data = await response.json();
-            const resultDiv = document.getElementById('result');
-            if (data.error) {
-                resultDiv.innerHTML = `<p style="color:red">${data.error}</p>`;
-            } else {
-                resultDiv.innerHTML = `
-                    <p><strong>Sản phẩm:</strong> ${data.product}</p>
-                    <p><strong>Ngày mua:</strong> ${data.purchase_date}</p>
-                    <p><strong>Tình trạng:</strong> ${data.status} (${data.warranty_months} tháng)</p>
-                `;
-            }
-            resultDiv.style.display = 'block';
-        }
-    </script>
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="#home" class="logo">
+            <img src="{{ url_for('static', filename='images/logo.png') }}"
+                    alt="TechCloud Logo" class="logo-image">
+            <div class="logo-text">
+                Tech<span>Cloud</span>
+            </div>
+        </a>
+        
+        <div class="nav-menu" id="navMenu">
+            <a href="#home" class="nav-link">Trang chủ</a>
+            <a href="#check" class="nav-link">Tra cứu</a>
+            <a href="#support" class="nav-link">Hỗ trợ</a>
+            <a href="#contact" class="nav-link nav-btn">Liên hệ</a>
+        </div>
+        
+        <button class="menu-btn" id="menuBtn">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero" id="home">
+    <div class="hero-content">
+        <h1>🔍 Tra cứu bảo hành thông minh</h1>
+        <p>Kiểm tra ngay tình trạng bảo hành của thiết bị chỉ với IMEI/Serial Number</p>
+        
+        <div class="search-container">
+            <div class="search-input-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="serialInput" class="search-input" 
+                       placeholder="Nhập IMEI / Serial Number (VD: IPHONE15-ABC123)">
+            </div>
+            <button onclick="checkWarranty()" class="search-btn">
+                Tra cứu ngay <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Main Container -->
+<main class="main-container" id="check">
+    <!-- Stats Section -->
+    <div class="stats-grid" id="statsSection"></div>
+    
+    <!-- Loading Spinner -->
+    <div id="loader" class="loader"></div>
+    
+    <!-- Result Section -->
+    <div id="resultSection"></div>
+    
+    <!-- Tips Section -->
+    <div class="tips-section" id="tipsSection">
+        <div class="tips-title">
+            <i class="fas fa-lightbulb" style="color: #667eea;"></i>
+            <span>Mẹo hữu ích</span>
+        </div>
+        <div class="tips-grid">
+            <div class="tip-item">
+                <div class="tip-icon">
+                    <i class="fas fa-qrcode"></i>
+                </div>
+                <div class="tip-text">
+                    <h4>Quét mã QR</h4>
+                    <p>Sử dụng camera để quét mã QR trên tem bảo hành</p>
+                </div>
+            </div>
+            <div class="tip-item">
+                <div class="tip-icon">
+                    <i class="fas fa-phone-alt"></i>
+                </div>
+                <div class="tip-text">
+                    <h4>Hotline hỗ trợ</h4>
+                    <p>Liên hệ 1900 1234 nếu cần hỗ trợ thêm</p>
+                </div>
+            </div>
+            <div class="tip-item">
+                <div class="tip-icon">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <div class="tip-text">
+                    <h4>Email thông báo</h4>
+                    <p>Đăng ký nhận thông báo khi sắp hết bảo hành</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<footer class="footer" id="contact">
+    <div class="footer-content">
+        <div class="footer-section">
+            <h4>TechCloud</h4>
+            <p>Hệ thống tra cứu bảo hành điện tử hàng đầu Việt Nam</p>
+            <div class="social-links">
+                <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+            </div>
+        </div>
+        
+        <div class="footer-section">
+            <h4>Liên kết nhanh</h4>
+            <p>Về chúng tôi</p>
+            <p>Chính sách bảo hành</p>
+            <p>Điều khoản sử dụng</p>
+            <p>Chính sách bảo mật</p>
+        </div>
+        
+        <div class="footer-section">
+            <h4>Liên hệ</h4>
+            <p><i class="fas fa-map-marker-alt"></i> 123 Đường Công Nghệ, Quận 1, TP.HCM</p>
+            <p><i class="fas fa-phone"></i> 1900 1234</p>
+            <p><i class="fas fa-envelope"></i> support@techcloud.com</p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>© 2026 TechCloud. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

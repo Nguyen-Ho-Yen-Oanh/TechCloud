@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-def get_db_connection():
+def get_db():
     conn = sqlite3.connect('warranty.db')
     conn.row_factory = sqlite3.Row
     return conn
@@ -17,26 +17,64 @@ def index():
 def check_warranty():
     serial = request.form.get('serial')
     
-    conn = get_db_connection()
+    conn = get_db()
     cursor = conn.cursor()
-    
     cursor.execute("SELECT * FROM products WHERE imei = ?", (serial,))
     result = cursor.fetchone()
-    
     conn.close()
     
     if result:
         return jsonify({
-            'product': result['product_name'],
+            'product_name': result['product_name'],
+            'brand': result['brand'],
+            'model': result['model'],
+            'color': result['color'],
+            'storage': result['storage'],
+            'customer_name': result['customer_name'],
+            'customer_phone': result['customer_phone'],
+            'customer_email': result['customer_email'],
             'purchase_date': result['purchase_date'],
-            'warranty_months': result['warranty_months'],
-            'status': 'Còn bảo hành' if result['warranty_months'] > 0 else 'Hết bảo hành'
+            'warranty_end_date': result['warranty_end_date'],
+            'price': result['price'],
+            'store_location': result['store_location'],
+            'warranty_months': result['warranty_months']
         })
     else:
-        return jsonify({'error': 'Không tìm thấy sản phẩm'}), 404
+        return jsonify({'error': 'Không tìm thấy sản phẩm với IMEI/Serial này'}), 404
+
+@app.route('/stats')
+def stats():
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) FROM products WHERE status = 'active'")
+    total_products = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(DISTINCT customer_phone) FROM products")
+    total_customers = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM products WHERE warranty_end_date > date('now')")
+    active_warranty = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(DISTINCT brand) FROM products")
+    total_brands = cursor.fetchone()[0]
+    
+    conn.close()
+    
+    return jsonify({
+        'total_products': total_products,
+        'total_customers': total_customers,
+        'active_warranty': active_warranty,
+        'total_brands': total_brands
+    })
 
 if __name__ == '__main__':
-    # Tạo database nếu chưa có
+    # Kiểm tra database
     if not os.path.exists('warranty.db'):
-        exec(open('init_db.py').read())
+        print("📦 Database not found! Running init_db.py...")
+        os.system("python init_db.py")
+        print("🌱 Run 'python seed.py' to add sample data!")
+    
     app.run(host='0.0.0.0', port=5000)
+
+    
