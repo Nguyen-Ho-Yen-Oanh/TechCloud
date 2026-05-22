@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TechCloud - Tra cứu bảo hành</title>
+    <style>
+        body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }
+        input { padding: 10px; width: 70%; }
+        button { padding: 10px 20px; background: blue; color: white; border: none; cursor: pointer; }
+        .result { margin-top: 20px; padding: 15px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h2>TRUNG TÂM BẢO HÀNH THIẾT BỊ TECHCLOUD</h2>
+    <form id="warrantyForm">
+        <input type="text" id="serial" placeholder="Nhập Serial / IMEI" required>
+        <button type="submit">TRA CỨU</button>
+    </form>
+    <div id="result" class="result" style="display:none;"></div>
+
+    <script>
+        document.getElementById('warrantyForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const serial = document.getElementById('serial').value;
+            const response = await fetch('/check_warranty', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `serial=${serial}`
+            });
+            const data = await response.json();
+            const resultDiv = document.getElementById('result');
+            if (data.error) {
+                resultDiv.innerHTML = `<p style="color:red">${data.error}</p>`;
+            } else {
+                resultDiv.innerHTML = `
+                    <p><strong>Sản phẩm:</strong> ${data.product}</p>
+                    <p><strong>Ngày mua:</strong> ${data.purchase_date}</p>
+                    <p><strong>Tình trạng:</strong> ${data.status} (${data.warranty_months} tháng)</p>
+                `;
+            }
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
