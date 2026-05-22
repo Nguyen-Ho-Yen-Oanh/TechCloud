@@ -1,17 +1,13 @@
 from flask import Flask, request, render_template, jsonify
-import mysql.connector
+import sqlite3
 import os
 
 app = Flask(__name__)
 
-# Chỉ kết nối trong internal network (private subnet)
 def get_db_connection():
-    return mysql.connector.connect(
-        host=os.environ.get('DB_HOST', 'mysql-db'),  # container name = private subnet
-        user=os.environ.get('DB_USER', 'warranty_user'),
-        password=os.environ.get('DB_PASSWORD', 'securepass123'),
-        database=os.environ.get('DB_NAME', 'warranty_db')
-    )
+    conn = sqlite3.connect('warranty.db')
+    conn.row_factory = sqlite3.Row
+    return conn
 
 @app.route('/')
 def index():
@@ -22,13 +18,11 @@ def check_warranty():
     serial = request.form.get('serial')
     
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     
-    query = "SELECT * FROM products WHERE imei = %s"
-    cursor.execute(query, (serial,))
+    cursor.execute("SELECT * FROM products WHERE imei = ?", (serial,))
     result = cursor.fetchone()
     
-    cursor.close()
     conn.close()
     
     if result:
@@ -42,4 +36,7 @@ def check_warranty():
         return jsonify({'error': 'Không tìm thấy sản phẩm'}), 404
 
 if __name__ == '__main__':
+    # Tạo database nếu chưa có
+    if not os.path.exists('warranty.db'):
+        exec(open('init_db.py').read())
     app.run(host='0.0.0.0', port=5000)
