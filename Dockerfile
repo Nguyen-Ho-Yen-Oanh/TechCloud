@@ -8,7 +8,7 @@ COPY . .
 
 # Chạy init và seed (không cần xác nhận)
 RUN python database/init_db.py
-RUN python database/seed_auto.py
+RUN python database/seed.py
 
 EXPOSE 5000
 CMD ["python", "app.py"]
