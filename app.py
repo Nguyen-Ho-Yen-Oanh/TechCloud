@@ -27,8 +27,13 @@ def check_warranty():
         return jsonify({
             'product_name': result['product_name'],
             'brand': result['brand'],
+            'model': result['model'],
+            'color': result['color'],
+            'storage': result['storage'],
             'purchase_date': result['purchase_date'],
             'warranty_end_date': result['warranty_end_date'],
+            'price': result['price'],
+            'store_location': result['store_location'],
             'warranty_months': result['warranty_months'],
             'status': 'Còn bảo hành' if result['warranty_months'] > 0 else 'Hết bảo hành'
         })
