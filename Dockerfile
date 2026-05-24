@@ -6,7 +6,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Chạy init và seed (không cần xác nhận)
+# Chạy init và seed cơ sở dữ liệu trước khi khởi động ứng dụng
 RUN python database/init_db.py
 RUN python database/seed.py
 
