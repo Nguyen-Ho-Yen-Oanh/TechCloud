@@ -10,21 +10,61 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-# 1. Danh sách IP đơn bị chặn (ưu tiên cao nhất)
+# 1. IP đơn bị chặn (kẻ tấn công)
 BLACKLIST_IPS = [
-    '10.71.199.150',  # IP test bị chặn
+    # '10.71.199.150',  # Không chặn nữa
 ]
 
-# 2. Dải IP được PHÉP truy cập (Whitelist - chỉ các mạng này mới vào được)
+# 2. Dải IP được PHÉP truy cập (Tất cả IP Việt Nam)
+# Tham khảo dải IP các nhà mạng Việt Nam (nguồn: VNNIC)
 ALLOWED_RANGES = [
-    '10.71.0.0/16',      # Cho phép toàn bộ dải 10.71.x.x
-    '192.168.0.0/16',  # Cho phép toàn bộ dải 192.168.x.x
-    '127.0.0.0/8',     # Cho phép localhost (để test local)
+    # Viettel
+    '113.160.0.0/11',
+    '115.72.0.0/13',
+    '118.68.0.0/14',
+    '125.234.0.0/15',
+    '203.162.0.0/15',
+    '171.251.0.0/16',
+    
+    # Mobifone
+    '14.160.0.0/12',
+    '14.176.0.0/12',
+    '27.64.0.0/12',
+    '27.72.0.0/13',
+    
+    # VinaPhone
+    '27.64.0.0/12',
+    '27.72.0.0/13',
+    '42.112.0.0/13',
+    '42.118.0.0/16',
+    '42.119.0.0/16',
+    '42.120.0.0/15',
+    
+    # FPT Telecom
+    '58.186.0.0/15',
+    '123.16.0.0/12',
+    '123.24.0.0/13',
+    
+    # VNPT
+    '117.0.0.0/12',
+    '118.68.0.0/14',
+    '171.224.0.0/13',
+    '171.232.0.0/13',
+    
+    # CMC Telecom
+    '203.210.0.0/15',
+    
+    # SCTV
+    '113.161.0.0/16',
+    
+    # Localhost (để test)
+    '127.0.0.0/8',
+    '10.0.0.0/8',      
+    '192.168.0.0/16',
 ]
 
-# 3. Dải IP bị CHẶN (Blacklist range - nếu có)
 BLACKLIST_RANGES = [
-    # '10.71.0.0/16',
+    # '113.160.1.0/24',
 ]
 
 def is_ip_in_range(ip, ranges):
@@ -38,9 +78,13 @@ def is_ip_in_range(ip, ranges):
         pass
     return False
 
+def is_vietnam_ip(ip):
+    """Kiểm tra có phải IP Việt Nam không"""
+    return is_ip_in_range(ip, ALLOWED_RANGES)
+
 @app.before_request
 def check_access():
-    """Chỉ cho phép IP trong dải 10.x và 192.168.x mới được truy cập"""
+    """Chỉ cho phép IP Việt Nam truy cập, chặn IP quốc tế"""
     client_ip = request.remote_addr
     forwarded_ip = request.headers.get('X-Forwarded-For', '').split(',')[0].strip()
     
@@ -54,23 +98,24 @@ def check_access():
         print(f"[BLOCKED] IP {real_ip} in blacklist")
         return "⚠️ Truy cập bị chặn. IP của bạn nằm trong danh sách đen.", 403
     
-    # 2. Kiểm tra blacklist range (nếu có)
+    # 2. Kiểm tra blacklist range
     if is_ip_in_range(real_ip, BLACKLIST_RANGES):
         print(f"[BLOCKED] IP {real_ip} in blacklisted range")
         return "⚠️ Truy cập bị chặn. Dải IP của bạn không được phép.", 403
     
-    # 3. Kiểm tra whitelist - CHỈ CHO PHÉP IP trong dải 10.x và 192.168.x
-    if not is_ip_in_range(real_ip, ALLOWED_RANGES):
-        print(f"[BLOCKED] IP {real_ip} not in allowed ranges")
-        return f"""
+    # 3. Kiểm tra có phải IP Việt Nam không
+    if not is_vietnam_ip(real_ip):
+        print(f"[BLOCKED] IP {real_ip} is not in Vietnam ranges")
+        return """
         <h2>⚠️ Truy cập bị từ chối</h2>
-        <p>Hệ thống chỉ cho phép truy cập từ mạng nội bộ (10.71.x.x hoặc 192.168.x.x).</p>
-        <p>IP của bạn: <strong>{real_ip}</strong></p>
-        <p>Vui lòng kết nối qua mạng 10.71.x.x hoặc mạng 192.168.x.x để sử dụng dịch vụ.</p>
-        """, 403
+        <p>Dịch vụ chỉ khả dụng tại Việt Nam.</p>
+        <p>IP của bạn: <strong>{}</strong></p>
+        <p>Vui lòng sử dụng mạng Internet tại Việt Nam (Viettel, Mobifone, VinaPhone, FPT, VNPT...)</p>
+        <p><a href="/my-ip">Xem chi tiết IP của bạn</a></p>
+        """.format(real_ip), 403
     
     # 4. Cho phép truy cập
-    print(f"[ALLOWED] IP {real_ip} is allowed")
+    print(f"[ALLOWED] IP {real_ip} is in Vietnam")
     return None
 
 @app.route('/')
@@ -137,15 +182,27 @@ def show_my_ip():
     forwarded_ip = request.headers.get('X-Forwarded-For', '').split(',')[0].strip()
     real_ip = forwarded_ip if forwarded_ip else client_ip
     
+    # Xác định nhà mạng gần đúng
+    carrier = "Không xác định"
+    if is_ip_in_range(real_ip, ['113.160.0.0/11', '115.72.0.0/13', '118.68.0.0/14', '125.234.0.0/15']):
+        carrier = "Viettel"
+    elif is_ip_in_range(real_ip, ['14.160.0.0/12', '14.176.0.0/12', '27.64.0.0/12']):
+        carrier = "Mobifone"
+    elif is_ip_in_range(real_ip, ['27.72.0.0/13', '42.112.0.0/13']):
+        carrier = "VinaPhone"
+    elif is_ip_in_range(real_ip, ['58.186.0.0/15', '123.16.0.0/12']):
+        carrier = "FPT Telecom"
+    elif is_ip_in_range(real_ip, ['117.0.0.0/12']):
+        carrier = "VNPT"
+    
     return jsonify({
         'remote_addr': client_ip,
         'forwarded_ip': forwarded_ip,
         'real_ip': real_ip,
-        'is_allowed': is_ip_in_range(real_ip, ALLOWED_RANGES),
+        'carrier': carrier,
+        'is_vietnam': is_vietnam_ip(real_ip),
         'is_blocked': real_ip in BLACKLIST_IPS or is_ip_in_range(real_ip, BLACKLIST_RANGES),
-        'allowed_ranges': ALLOWED_RANGES,
-        'blacklist_ips': BLACKLIST_IPS,
-        'blacklist_ranges': BLACKLIST_RANGES
+        'message': "✅ IP Việt Nam - Được phép truy cập" if is_vietnam_ip(real_ip) else "❌ IP quốc tế - Bị chặn"
     })
 
 if __name__ == '__main__':
